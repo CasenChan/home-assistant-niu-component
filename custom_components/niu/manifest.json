@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/CasenChan/home-assistant-niu-component/issues",
   "requirements": ["requests"],
   "single_config_entry": false,
-  "version": "2.2.0"
+  "version": "2.2.1"
 }

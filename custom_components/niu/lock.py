@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from time import monotonic
 from typing import Any
 
 from homeassistant.components.lock import LockEntity, LockEntityDescription
@@ -21,6 +22,8 @@ LOCK_DESCRIPTION = LockEntityDescription(
     translation_key="vehicle_power",
     icon="mdi:power",
 )
+
+OPTIMISTIC_STATE_SECONDS = 25
 
 
 async def async_setup_entry(
@@ -43,6 +46,8 @@ class NiuVehiclePowerLock(CoordinatorEntity[NiuDataCoordinator], LockEntity):
 
     entity_description = LOCK_DESCRIPTION
     _attr_has_entity_name = True
+    _attr_is_locking = False
+    _attr_is_unlocking = False
 
     def __init__(
         self,
@@ -51,6 +56,8 @@ class NiuVehiclePowerLock(CoordinatorEntity[NiuDataCoordinator], LockEntity):
     ) -> None:
         """Initialize the vehicle power lock."""
         super().__init__(coordinator)
+        self._optimistic_is_locked: bool | None = None
+        self._optimistic_until = 0.0
 
         scooter_id = config_entry.data.get(CONF_SCOOTER_ID, 0)
         self._attr_unique_id = f"niu_scooter_{scooter_id}_vehicle_power"
@@ -65,6 +72,15 @@ class NiuVehiclePowerLock(CoordinatorEntity[NiuDataCoordinator], LockEntity):
     @property
     def is_locked(self) -> bool | None:
         """Return locked while vehicle power is off."""
+        if (
+            self._optimistic_is_locked is not None
+            and monotonic() < self._optimistic_until
+        ):
+            return self._optimistic_is_locked
+        return self._reported_is_locked()
+
+    def _reported_is_locked(self) -> bool | None:
+        """Return the lock state reported by the NIU cloud."""
         value = self.coordinator.get_motor_data("isAccOn")
         if value is None or value == "":
             return None
@@ -81,15 +97,39 @@ class NiuVehiclePowerLock(CoordinatorEntity[NiuDataCoordinator], LockEntity):
 
     async def async_lock(self, **kwargs: Any) -> None:
         """Turn vehicle power off."""
-        await self._async_send_command(COMMAND_ACC_OFF)
+        await self._async_send_command(COMMAND_ACC_OFF, target_locked=True)
 
     async def async_unlock(self, **kwargs: Any) -> None:
         """Turn vehicle power on."""
-        await self._async_send_command(COMMAND_ACC_ON)
+        await self._async_send_command(COMMAND_ACC_ON, target_locked=False)
 
-    async def _async_send_command(self, command: str) -> None:
-        """Send a power command and expose API failures as HA errors."""
+    async def _async_send_command(self, command: str, target_locked: bool) -> None:
+        """Send a power command with immediate optimistic feedback."""
+        self._attr_is_locking = target_locked
+        self._attr_is_unlocking = not target_locked
+        self.async_write_ha_state()
+
         try:
             await self.coordinator.async_send_command(command)
         except NiuConnectionError as err:
+            self._optimistic_is_locked = None
+            self._attr_is_locking = False
+            self._attr_is_unlocking = False
+            self.async_write_ha_state()
             raise HomeAssistantError(str(err)) from err
+
+        self._optimistic_is_locked = target_locked
+        self._optimistic_until = monotonic() + OPTIMISTIC_STATE_SECONDS
+        self._attr_is_locking = False
+        self._attr_is_unlocking = False
+        self.async_write_ha_state()
+
+    def _handle_coordinator_update(self) -> None:
+        """Replace optimistic state once the cloud reports the target state."""
+        reported_state = self._reported_is_locked()
+        if (
+            self._optimistic_is_locked is not None
+            and reported_state is self._optimistic_is_locked
+        ):
+            self._optimistic_is_locked = None
+        super()._handle_coordinator_update()

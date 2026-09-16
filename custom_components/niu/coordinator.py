@@ -49,6 +49,7 @@ class NiuDataCoordinator(DataUpdateCoordinator):
         self._data_scooter_detail = None
         self._features: dict[str, bool] = {}
         self._command_lock = asyncio.Lock()
+        self._command_refresh_task: asyncio.Task[None] | None = None
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update data from NIU API."""
@@ -111,7 +112,7 @@ class NiuDataCoordinator(DataUpdateCoordinator):
         return self._features.get(feature_name)
 
     async def async_send_command(self, command: str) -> dict[str, Any]:
-        """Send a serialized remote command and refresh vehicle state."""
+        """Send a serialized remote command and refresh state in the background."""
         if not self.sn or not self.token:
             await self.async_refresh()
 
@@ -123,10 +124,24 @@ class NiuDataCoordinator(DataUpdateCoordinator):
                 self.api.send_command, self.sn, self.token, command
             )
 
-            # The cloud acknowledges a command before the vehicle status changes.
-            await asyncio.sleep(2)
-            await self.async_request_refresh()
+            # Do not block the Home Assistant action while waiting for the cloud
+            # status to catch up. Reconcile a few times in the background instead.
+            if self._command_refresh_task and not self._command_refresh_task.done():
+                self._command_refresh_task.cancel()
+            self._command_refresh_task = (
+                self.config_entry.async_create_background_task(
+                    self.hass,
+                    self._async_refresh_after_command(),
+                    "NIU command state refresh",
+                )
+            )
             return result
+
+    async def _async_refresh_after_command(self) -> None:
+        """Reconcile cloud state without delaying the command response."""
+        for delay in (2, 6, 12):
+            await asyncio.sleep(delay)
+            await self.async_request_refresh()
 
     async def _update_battery_info(self):
         """Update battery information."""

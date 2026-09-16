@@ -14,8 +14,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .api import NiuConnectionError
 from .const import (
-    COMMAND_ACC_OFF,
-    COMMAND_ACC_ON,
     COMMAND_FORTIFICATION_OFF,
     COMMAND_FORTIFICATION_ON,
     CONF_SCOOTER_ID,
@@ -35,15 +33,6 @@ class NiuSwitchEntityDescription(SwitchEntityDescription):
 
 
 SWITCH_DESCRIPTIONS = (
-    NiuSwitchEntityDescription(
-        key="vehicle_power",
-        translation_key="vehicle_power",
-        icon="mdi:power",
-        state_field="isAccOn",
-        command_on=COMMAND_ACC_ON,
-        command_off=COMMAND_ACC_OFF,
-        required_feature="acc_switch",
-    ),
     NiuSwitchEntityDescription(
         key="fortification",
         translation_key="fortification",

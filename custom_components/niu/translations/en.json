@@ -53,10 +53,12 @@
         "name": "Open seat"
       }
     },
-    "switch": {
+    "lock": {
       "vehicle_power": {
-        "name": "Vehicle power"
-      },
+        "name": "Vehicle power lock"
+      }
+    },
+    "switch": {
       "fortification": {
         "name": "Fortification"
       }

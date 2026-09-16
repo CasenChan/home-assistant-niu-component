@@ -62,10 +62,12 @@
         "name": "开启座桶"
       }
     },
-    "switch": {
+    "lock": {
       "vehicle_power": {
-        "name": "车辆电源"
-      },
+        "name": "车辆电源锁"
+      }
+    },
+    "switch": {
       "fortification": {
         "name": "车辆设防"
       }

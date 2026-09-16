@@ -19,6 +19,15 @@ MOTOR_INDEX_API_URI = "/v5/scooter/motor_data/index_info"
 MOTOINFO_LIST_API_URI = "/v5/scooter/list"
 MOTOINFO_ALL_API_URI = "/motoinfo/overallTally"
 TRACK_LIST_API_URI = "/v5/track/list/v2"
+SCOOTER_DETAIL_API_URI = "/v5/scooter/detail/{sn}"
+COMMAND_API_URI = "/v5/cmd/creat"
+
+# Remote command names used by the official NIU cloud API.
+COMMAND_ACC_ON = "acc_on"
+COMMAND_ACC_OFF = "acc_off"
+COMMAND_FORTIFICATION_ON = "fortification_on"
+COMMAND_FORTIFICATION_OFF = "fortification_off"
+COMMAND_CUSHION_LOCK_ON = "cushion_lock_on"
 
 # Sensor types
 SENSOR_TYPE_BAT = "BAT"

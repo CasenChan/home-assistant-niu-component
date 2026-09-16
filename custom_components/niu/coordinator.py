@@ -1,5 +1,6 @@
 """Data coordinator for NIU integration."""
 
+import asyncio
 import logging
 from datetime import datetime, timedelta
 from time import gmtime, strftime
@@ -12,8 +13,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .api import NiuAPI, NiuAuthError, NiuConnectionError
 from .const import (
     SENSOR_TYPE_BAT,
-    SENSOR_TYPE_MOTO,
     SENSOR_TYPE_DIST,
+    SENSOR_TYPE_MOTO,
     SENSOR_TYPE_OVERALL,
     SENSOR_TYPE_POS,
     SENSOR_TYPE_TRACK,
@@ -45,6 +46,9 @@ class NiuDataCoordinator(DataUpdateCoordinator):
         self._data_moto = None
         self._data_moto_info = None
         self._data_track_info = None
+        self._data_scooter_detail = None
+        self._features: dict[str, bool] = {}
+        self._command_lock = asyncio.Lock()
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update data from NIU API."""
@@ -59,6 +63,7 @@ class NiuDataCoordinator(DataUpdateCoordinator):
                 )
                 scooter_id = self.config_entry.data.get("scooter_id", 0)
                 self.sn = vehicles["data"]["items"][scooter_id]["sn_id"]
+                await self._update_scooter_detail()
 
             # Update all data
             await self._update_battery_info()
@@ -79,6 +84,49 @@ class NiuDataCoordinator(DataUpdateCoordinator):
             if isinstance(err, NiuAuthError):
                 self.token = None
             raise
+
+    async def _update_scooter_detail(self):
+        """Update scooter details and cache supported feature flags."""
+        try:
+            self._data_scooter_detail = await self.hass.async_add_executor_job(
+                self.api.get_scooter_detail, self.sn, self.token
+            )
+            features = self._data_scooter_detail.get("data", {}).get("features", [])
+            if isinstance(features, dict):
+                self._features = {
+                    str(name): bool(is_supported)
+                    for name, is_supported in features.items()
+                }
+            else:
+                self._features = {
+                    feature["featureName"]: bool(feature.get("isSupport"))
+                    for feature in features
+                    if isinstance(feature, dict) and feature.get("featureName")
+                }
+        except NiuConnectionError as err:
+            _LOGGER.warning("Failed to update scooter details: %s", err)
+
+    def is_feature_supported(self, feature_name: str) -> bool | None:
+        """Return whether a scooter feature is supported, if known."""
+        return self._features.get(feature_name)
+
+    async def async_send_command(self, command: str) -> dict[str, Any]:
+        """Send a serialized remote command and refresh vehicle state."""
+        if not self.sn or not self.token:
+            await self.async_refresh()
+
+        if not self.sn or not self.token:
+            raise NiuConnectionError("Scooter is not initialized")
+
+        async with self._command_lock:
+            result = await self.hass.async_add_executor_job(
+                self.api.send_command, self.sn, self.token, command
+            )
+
+            # The cloud acknowledges a command before the vehicle status changes.
+            await asyncio.sleep(2)
+            await self.async_request_refresh()
+            return result
 
     async def _update_battery_info(self):
         """Update battery information."""

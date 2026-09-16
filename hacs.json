@@ -2,7 +2,7 @@
   "name": "Niu Scooter Integration",
   "content_in_root": false,
   "render_readme": true,
-  "authors": ["goxofy"],
-  "repository": "https://github.com/goxofy/home-assistant-niu-component",
-  "issues": "https://github.com/goxofy/home-assistant-niu-component/issues"
+  "authors": ["goxofy", "CasenChan"],
+  "repository": "https://github.com/CasenChan/home-assistant-niu-component",
+  "issues": "https://github.com/CasenChan/home-assistant-niu-component/issues"
 }

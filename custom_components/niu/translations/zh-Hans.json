@@ -56,5 +56,20 @@
         "title": "NIU集成选项"
       }
     }
+  },
+  "entity": {
+    "button": {
+      "open_seat": {
+        "name": "开启座桶"
+      }
+    },
+    "switch": {
+      "vehicle_power": {
+        "name": "车辆电源"
+      },
+      "fortification": {
+        "name": "车辆设防"
+      }
+    }
   }
 }

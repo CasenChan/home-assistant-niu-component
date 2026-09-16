@@ -9,6 +9,7 @@
 - **实时更新**: 从您的NIU滑板车获取实时数据
 - **多滑板车支持**: 支持一个账户中的多辆滑板车
 - **可配置传感器**: 选择要监控的传感器
+- **车辆控制**: 根据车型能力提供整车电源、设防开关和座桶按钮
 
 ## 安装
 
@@ -17,7 +18,7 @@
 1. 在HACS中添加此仓库：
    - 进入HACS → 集成
    - 点击右上角"..."选择"Custom repositories"
-   - 在Repository输入"https://github.com/goxofy/home-assistant-niu-component",Type选择"Intergration"
+   - 在Repository输入"https://github.com/CasenChan/home-assistant-niu-component",Type选择"Integration"
    - 点击"ADD"按钮
    - 搜索"NIU Scooter Integration"
    - 点击"下载"
@@ -94,6 +95,18 @@
 3. 输入相同的凭据但使用不同的**滑板车ID**
 4. 为每辆滑板车重复此操作
 
+## 车辆控制
+
+版本 2.1.0 起会根据车辆上报的能力创建以下开关：
+
+- **整车电源**：远程启动或关闭车辆
+- **车辆设防**：开启或关闭设防状态
+- **开启座桶**：发送一次开启座桶指令
+
+车辆控制依赖牛电云服务、车辆在线状态和车型权限。将这些实体用于自动化前，请先确认车辆周围安全，并避免无人看管的自动启动。
+
+“开启座桶”是无持续状态的一次性动作，因此在 Home Assistant 中实现为按钮，而不是开关。
+
 ## 故障排除
 
 ### 连接问题
@@ -118,10 +131,17 @@
 
 ## 支持
 
-- **问题反馈**: [GitHub Issues](https://github.com/goxofy/home-assistant-niu-component/issues)
-- **文档**: [GitHub 仓库](https://github.com/goxofy/home-assistant-niu-component)
+- **问题反馈**: [GitHub Issues](https://github.com/CasenChan/home-assistant-niu-component/issues)
+- **文档**: [GitHub 仓库](https://github.com/CasenChan/home-assistant-niu-component)
 
 ## 更新日志
+
+### 版本 2.1.0
+- **新增**: 根据车型能力提供整车电源开关
+- **新增**: 根据车型能力提供车辆设防开关
+- **新增**: 根据车型能力提供开启座桶按钮
+- **新增**: 控制指令串行化，避免连续操作互相覆盖
+- **改进**: 控制完成后主动刷新车辆状态
 
 ### 版本 2.0.0
 - **新增**: 基于UI的配置
@@ -140,4 +160,3 @@
 ## 许可证
 
 本项目采用MIT许可证 - 详情请参阅[LICENSE](LICENSE)文件。
-

@@ -47,5 +47,20 @@
         "title": "NIU Integration Options"
       }
     }
+  },
+  "entity": {
+    "button": {
+      "open_seat": {
+        "name": "Open seat"
+      }
+    },
+    "switch": {
+      "vehicle_power": {
+        "name": "Vehicle power"
+      },
+      "fortification": {
+        "name": "Fortification"
+      }
+    }
   }
 }

@@ -1,15 +1,13 @@
 {
   "domain": "niu",
   "name": "NIU Scooters",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "iot_class": "cloud_polling",
-  "documentation": "https://github.com/goxofy/home-assistant-niu-component",
-  "issue_tracker": "https://github.com/goxofy/home-assistant-niu-component/issues",
+  "documentation": "https://github.com/CasenChan/home-assistant-niu-component",
+  "issue_tracker": "https://github.com/CasenChan/home-assistant-niu-component/issues",
   "requirements": ["requests"],
   "dependencies": [],
-  "codeowners": [
-    "@goxofy"
-  ],
+  "codeowners": ["@goxofy", "@CasenChan"],
   "config_flow": true,
   "single_config_entry": false
 }

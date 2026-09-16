@@ -9,12 +9,14 @@ import requests
 
 from .const import (
     ACCOUNT_BASE_URL,
-    LOGIN_URI,
     API_BASE_URL,
+    COMMAND_API_URI,
+    LOGIN_URI,
+    MOTOINFO_ALL_API_URI,
+    MOTOINFO_LIST_API_URI,
     MOTOR_BATTERY_API_URI,
     MOTOR_INDEX_API_URI,
-    MOTOINFO_LIST_API_URI,
-    MOTOINFO_ALL_API_URI,
+    SCOOTER_DETAIL_API_URI,
     TRACK_LIST_API_URI,
 )
 
@@ -181,3 +183,59 @@ class NiuAPI:
             raise NiuConnectionError(f"Failed to get track info: {err}")
         except json.JSONDecodeError as err:
             raise NiuConnectionError(f"Failed to parse track response: {err}")
+
+    def get_scooter_detail(self, sn: str, token: str) -> dict[str, Any]:
+        """Get scooter details and supported feature flags."""
+        url = API_BASE_URL + SCOOTER_DETAIL_API_URI.format(sn=sn)
+        headers = {
+            "token": token,
+            "User-Agent": "manager/4.6.48 (android; IN2020 11);lang=zh-CN;clientIdentifier=Domestic;timezone=Asia/Shanghai;model=IN2020;deviceName=IN2020;ostype=android",
+        }
+
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            data = json.loads(response.content.decode())
+
+            if data.get("status") != 0:
+                raise NiuConnectionError(
+                    f"API error: {data.get('message') or data.get('desc', 'Unknown error')}"
+                )
+
+            return data
+        except requests.exceptions.RequestException as err:
+            raise NiuConnectionError(f"Failed to get scooter details: {err}")
+        except json.JSONDecodeError as err:
+            raise NiuConnectionError(f"Failed to parse scooter details: {err}")
+
+    def send_command(
+        self, sn: str, token: str, command: str
+    ) -> dict[str, Any]:
+        """Send a remote command to a scooter."""
+        url = API_BASE_URL + COMMAND_API_URI
+        headers = {
+            "token": token,
+            "Content-Type": "application/json",
+            "User-Agent": "manager/4.6.48 (android; IN2020 11);lang=zh-CN;clientIdentifier=Domestic;timezone=Asia/Shanghai;model=IN2020;deviceName=IN2020;ostype=android",
+        }
+
+        try:
+            response = requests.post(
+                url,
+                headers=headers,
+                json={"token": token, "sn": sn, "type": command},
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = json.loads(response.content.decode())
+
+            if data.get("status") != 0:
+                raise NiuConnectionError(
+                    f"Command failed: {data.get('message') or data.get('desc', 'Unknown error')}"
+                )
+
+            return data
+        except requests.exceptions.RequestException as err:
+            raise NiuConnectionError(f"Failed to send NIU command: {err}")
+        except json.JSONDecodeError as err:
+            raise NiuConnectionError(f"Failed to parse command response: {err}")
